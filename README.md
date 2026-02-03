@@ -1,167 +1,177 @@
-JP Peng
-Quantitative Research & Systematic Trading Portfolio
-Overview
+🚀 JP Peng
+Quantitative Research · Systematic Trading · Risk Analytics
+🧭 Overview
 
-This repository hosts my professional portfolio site and serves as a structured archive of my quantitative research, portfolio analytics, and systematic strategy development work.
+This repository hosts the professional portfolio site and serves as a structured archive of work in:
 
-My work focuses on building production-grade research and trading pipelines that convert statistical evidence into deployable investment decisions. The emphasis is consistently on:
+systematic alpha research
+
+volatility and risk modeling
+
+portfolio construction
+
+production trading infrastructure
+
+Primary focus: building production-grade quantitative pipelines that translate statistical evidence into deployable investment decisions, with emphasis on:
 
 robustness
 
 interpretability
 
-realistic execution
+realistic execution assumptions
 
-risk control
+disciplined risk control
 
-rather than optimizing backtest performance.
+—not backtest optimization.
 
-The projects presented here reflect a disciplined research workflow:
-
-data engineering → modeling → validation → risk control → deployment readiness
-
-Live site:
+🔗 Live site
 https://jppeng-123.github.io/
 
-Research Philosophy
+🧠 Research Philosophy
 
-Markets reward process consistency, not clever ideas.
+Markets reward process consistency rather than isolated performance.
 
-My research principles:
+Core principles:
 
-Statistical validity over in-sample performance
+statistical validity over in-sample results
 
-Out-of-sample robustness over complexity
+out-of-sample robustness over model complexity
 
-Risk control over raw return maximization
+risk management over return maximization
 
-All strategies follow an institutional workflow:
+Standard research workflow:
 
-Walk-forward training · strict holdout · cross-sectional neutralization · transaction cost modeling · realistic liquidity constraints
+Walk-forward training
+→ strict holdout testing
+→ cross-sectional neutralization
+→ transaction cost modeling
+→ liquidity-aware execution
 
-Objective:
-Build strategies that remain stable under real market conditions, not only in historical simulations.
 
-Core Research Domains
-Systematic Equity & Factor Research
+Objective: strategies designed for live deployment, not historical fit.
 
-Design and validation of cross-sectional alpha signals with strict inference standards.
+📚 Research Domains
+📈 Systematic Equity & Factor Research
+
+Development and validation of cross-sectional alpha signals.
 
 Methods:
 
 Information Coefficient screening
 
-Regularization (LASSO / Ridge)
+LASSO / Ridge regularization
 
-Factor stability diagnostics
+Genetic Algorithm factor discovery
 
 Barra-style risk neutralization
 
 Walk-forward backtesting
 
-Newey-West HAC inference for statistical significance
+Newey-West HAC statistical inference
 
 Focus:
 
 stable signals
 
-low turnover
+controlled turnover
 
 deployable exposures
 
-minimized overfitting risk
+minimized overfitting
 
-Volatility & Risk Modeling
+🌪 Volatility & Risk Modeling
 
-Construction of forward-looking risk and uncertainty engines.
+Construction of forward-looking risk and uncertainty frameworks.
 
 Methods:
 
 GARCH / EGARCH volatility forecasting
 
-Hidden Markov Models for regime detection
+Hidden Markov regime detection
 
 Monte Carlo scenario simulation
 
-Value-at-Risk / Expected Shortfall estimation
+Value-at-Risk / Expected Shortfall
 
-Tail event stress testing
+portfolio stress testing
 
 Focus:
 
-distribution shape awareness
+distribution-aware modeling
 
 regime sensitivity
 
-drawdown control
+tail risk control
 
-risk budgeting
+drawdown stability
 
-Portfolio Construction & Optimization
+⚖️ Portfolio Construction & Optimization
 
-Implementation of practical portfolio engineering frameworks.
+Practical portfolio engineering under realistic constraints.
 
 Methods:
 
-Softmax weighting
+softmax weighting
 
-Risk parity / exposure balancing
+risk parity allocation
 
 PCA factor decomposition
 
-Transaction cost modeling
+transaction cost modeling
 
-Liquidity and execution filters
+liquidity filters
 
 Focus:
 
 capital efficiency
 
-stable turnover
+scalable execution
 
-realistic execution assumptions
+stable exposures
 
-scalable deployment
+implementation feasibility
 
-Recent Development Focus
-Walk-Forward Genetic Algorithm Factor Mining Platform
+🔬 Recent Development Focus
+🧬 Walk-Forward Genetic Algorithm Alpha Platform
 
-Recent work centers on building an industry-grade automated alpha discovery engine designed for robust out-of-sample deployment.
+Industry-grade automated alpha discovery and validation framework.
 
-Framework highlights:
+Architecture:
 
-Rolling walk-forward training schedule (multi-year lookback)
+rolling multi-year walk-forward training schedule
 
-Strict holdout evaluation
+strict holdout evaluation
 
-Time-ordered train/validation splits with purge gaps
+time-ordered train/validation splits with purge gaps
 
-LASSO pre-selection of candidate terminals
+LASSO pre-selection of candidate features
 
-Genetic Programming / GA symbolic factor generation
+symbolic factor generation via Genetic Programming
 
-Complexity penalties to avoid overfitting
+complexity penalties to reduce overfitting
 
 Barra-style neutralization
 
 Newey-West t-stat inference on daily IC
 
-Daily rolling backtests with transaction costs
+transaction-cost-aware rolling backtests
 
 Purpose:
 
-Transform factor discovery from manual experimentation into a repeatable, statistically disciplined research pipeline.
+systematic factor discovery
 
-This project reflects how I approach systematic research at scale:
-automation, reproducibility, and institutional standards.
+reproducible research process
 
-Technical Stack
+statistically defensible signals
+
+production-ready deployment
+
+🛠 Technical Stack
 Programming
 
-Python
-NumPy · Pandas · Numba · scikit-learn · statsmodels · matplotlib
+Python · NumPy · Pandas · Numba · scikit-learn · statsmodels · matplotlib
 
-Quant Infrastructure
+Infrastructure
 
 Bloomberg · SQL · data pipelines · large-scale backtesting systems
 
@@ -169,27 +179,23 @@ Methods
 
 Time-series modeling · cross-sectional econometrics · machine learning · stochastic simulation · optimization
 
-What This Portfolio Demonstrates
+📊 Portfolio Scope
 
-This site is not a collection of academic notebooks.
+This portfolio represents:
 
-It demonstrates:
+research structure
 
-how I structure quantitative research
+modeling standards
 
-how I validate hypotheses rigorously
+statistical discipline
 
-how I control overfitting
+execution realism
 
-how I model execution reality
+production readiness
 
-how I prepare strategies for live trading environments
+Designed to reflect professional quantitative research practices rather than academic prototypes.
 
-The goal is to communicate both technical depth and professional rigor.
-
-Contact
-
-For collaboration or opportunities in quantitative research, systematic trading, or risk analytics:
+🤝 Contact
 
 Email
 jinjia.peng1122@gmail.com
