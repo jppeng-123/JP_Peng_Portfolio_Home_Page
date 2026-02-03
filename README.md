@@ -27,6 +27,9 @@ disciplined risk control
 🔗 Live site
 https://jppeng-123.github.io/
 
+
+
+
 🧠 Research Philosophy
 
 Markets reward process consistency rather than isolated performance.
@@ -47,8 +50,10 @@ Walk-forward training
 → transaction cost modeling
 → liquidity-aware execution
 
-
 Objective: strategies designed for live deployment, not historical fit.
+
+
+
 
 📚 Research Domains
 📈 Systematic Equity & Factor Research
@@ -105,6 +110,9 @@ tail risk control
 
 drawdown stability
 
+
+
+
 ⚖️ Portfolio Construction & Optimization
 
 Practical portfolio engineering under realistic constraints.
@@ -130,6 +138,9 @@ scalable execution
 stable exposures
 
 implementation feasibility
+
+
+
 
 🔬 Recent Development Focus
 🧬 Walk-Forward Genetic Algorithm Alpha Platform
@@ -166,6 +177,9 @@ statistically defensible signals
 
 production-ready deployment
 
+
+
+
 🛠 Technical Stack
 Programming
 
@@ -178,6 +192,9 @@ Bloomberg · SQL · data pipelines · large-scale backtesting systems
 Methods
 
 Time-series modeling · cross-sectional econometrics · machine learning · stochastic simulation · optimization
+
+
+
 
 📊 Portfolio Scope
 
@@ -194,6 +211,9 @@ execution realism
 production readiness
 
 Designed to reflect professional quantitative research practices rather than academic prototypes.
+
+
+
 
 🤝 Contact
 
