@@ -1814,7 +1814,6 @@ class RouteAEngine:
 
 # ------------------------------------------------------------
 # Backward-compatible global aliases (names unchanged)
-# 你后面所有调用、以及上面那段 features/logret 产出都能无缝接上
 # ------------------------------------------------------------
 
 ensure_aligned = RouteAEngine.ensure_aligned
@@ -5880,7 +5879,7 @@ class PrepBlockPipeline:
 
 
 # ============================================================
-# Example usage (与你原来的调用节奏一致，只是换成类)
+# Example usage 
 # ============================================================
 
 # 1) init pipeline
@@ -5989,10 +5988,10 @@ print(row.iloc[:10] if row is not None else "No composite row found.")
 ''' BackTesting Framework '''
 
 # ============================================================
-# 0) Inputs (你原样保留)
+# 0) Inputs 
 # ============================================================
 
-target_index = logret.index   # 或者 close.index / idx_valid / 你想对齐的那个
+target_index = logret.index   
 
 # 3) 调你之前的函数，得到对齐后的 SPY close（index 与 target_index 完全一致）
 spy_close_price = ga_spy_aggs_to_close_series(
@@ -6011,7 +6010,6 @@ spy_close_price = ga_spy_aggs_to_close_series(
 
 # ============================================================
 # 0) PARAMS (EDIT HERE ONLY)
-#   - 已按：100股美股小池 + 5D GA因子（更真实摩擦、更抗过拟合）调优
 # ============================================================
 
 CFG = {
@@ -6019,25 +6017,25 @@ CFG = {
     "engine": {
         "init_cash": 1e8,
         "hold_days": 5,           # locked by implementation
-        "n_pick": 15,             # (100股小池)更分散
-        "tau_softmax": 1.15,      # 降低极端集中/抗过拟合
-        "fee_per_share": 0.001,   # 更贴近现代交易成本量级（主要成本应在impact）
-        "impact_bps": 0.0012,     # 12 bps：小池/日交易/软最大，更真实
+        "n_pick": 15,           
+        "tau_softmax": 1.15,     
+        "fee_per_share": 0.001,   
+        "impact_bps": 0.0012,     
     },
 
     # ---------- Sample Space ----------
     "sample_space": {
-        "amo_window": 20,             # 更稳的流动性过滤
-        "amo_threshold": 2e7,         # $20m/day 量级（美元成交额）
-        "min_listed_days": 120,       # 避免IPO/新股噪声
+        "amo_window": 20,           
+        "amo_threshold": 2e7,       
+        "min_listed_days": 120,      
         "require_price_positive": True,
     },
 
     # ---------- Backtest wrapper ----------
     "wrapper": {
         "strict_tminus1": True,          # keep: no look-ahead
-        "liquidation_buffer_days": 15,   # 给maturity + sell fail更充分缓冲
-        "min_cs_n": 50,                  # 100股池更严门槛
+        "liquidation_buffer_days": 15,   
+        "min_cs_n": 50,                  
         "start": None,                   # auto infer
         "end": None,                     # auto infer
     },
@@ -6368,7 +6366,6 @@ def _build_w_trade_stage(
 
         # ============================================================
         # [MOD] 防止“样本不足随机交易”：
-        # 若 eligible & finite 的横截面数量 < min_cs_n，直接跳过当日 entry
         # ============================================================
         n_cs = _count_eligible_finite(x, elig)
         if n_cs < min_cs_n:
@@ -7031,10 +7028,6 @@ def run_backtest_ga_wf_softmax_5d(
         sample_stage_raw = sample_space.reindex(index=stage_dates, columns=stocks).astype(np.uint8)
         comp_stage_raw = comp_df.reindex(index=stage_dates).astype(float)
 
-        # ============================================================
-        # 因子/暴露在上游已严格处理（signal_bank 内部 delay），
-        # sample_space 在 build_sample_space_amo_listing 内部也做了 delay
-        # 回测里不再额外 shift
         # ============================================================
         sample_stage = sample_stage_raw
         comp_stage = comp_stage_raw
@@ -7964,12 +7957,6 @@ def plot_window_daily_return_hist(win: dict, title="Window Daily Return Distribu
 # ============================================================
 
 class BacktestFramework:
-    """
-    Industry-grade packaging:
-    - 保留所有原函数在模块级（兼容你原 USAGE）
-    - 同时把它们挂到类里作为 staticmethod（方便项目化、命名空间管理）
-    - 把 CFG/常量挂到类属性（共有参数集中）
-    """
     CFG = CFG
 
     # constants
@@ -8030,7 +8017,7 @@ class BacktestFramework:
 
 
 # ============================================================
-# 10) USAGE (copy/paste)  -- 你原调用完全不动
+# 10) USAGE (copy/paste)
 # ============================================================
 
 sample_space = build_sample_space_amo_listing(
@@ -8107,3 +8094,4 @@ bt_bank["exec_daily"]
 bt_bank["daily"]
 bt_bank["回测结果"]["stage_table"]
 bt_bank["inferred_window"]
+
