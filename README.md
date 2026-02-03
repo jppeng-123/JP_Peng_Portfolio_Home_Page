@@ -96,4 +96,4 @@ Email: jinjia.peng1122@gmail.com
 
 GitHub: https://github.com/jppeng-123
 
-LinkedIn: (your link)
+LinkedIn: https://www.linkedin.com/in/jinjiapeng/
