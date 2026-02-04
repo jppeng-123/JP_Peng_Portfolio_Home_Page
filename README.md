@@ -225,3 +225,13 @@ https://github.com/jppeng-123
 
 LinkedIn
 https://www.linkedin.com/in/jinjiapeng/
+
+
+
+
+
+Disclaimer
+This repository is for research and educational purposes only.
+Nothing here is financial advice, and performance in backtests does not guarantee future results.
+
+UNAUTHORIZED USAGE OF THE CONTENTS IS PROHIBITED AND MAY RESULT IN LEGAL ACTIONS
