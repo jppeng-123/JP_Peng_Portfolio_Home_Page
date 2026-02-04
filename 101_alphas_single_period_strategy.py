@@ -2,9 +2,6 @@
 """ 101 Formulaic Alphas & U.S. Single Period Strategy (Daily Frequency)
 """
 
-!pip install arch
-!pip install hmmlearn
-
 # IMPORTS & DRIVE MOUNT
 import pandas as pd
 import numpy as np
