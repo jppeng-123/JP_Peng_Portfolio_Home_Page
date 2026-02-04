@@ -3006,6 +3006,8 @@ LassoFilterLayer.plot_walkforward_lasso_report(wf_lasso, save_dir=None)
 
 
 
+
+
 # ============================================================
 # GA LAYER (WF CONNECTED) — Industry-grade GP/GA on LASSO-selected terminals
 # - Outer: reuse wf slice schedule + real OOS holdout
@@ -3691,7 +3693,7 @@ def gp_score_on_index(
     risk_lnmcap_full: Optional[np.ndarray] = None,
     industry_codes: Optional[np.ndarray] = None,
     lambda_complexity: float = GA_LAMBDA_COMPLEXITY,
-    min_t_eff_override: Optional[int] = None,   # ---- NEW: allow holdout shorter threshold
+    min_t_eff_override: Optional[int] = None,
 ) -> GPFitness:
 
     slice_idx = pd.Index(slice_idx)
@@ -3813,7 +3815,6 @@ class GASliceResult:
     gen_log: pd.DataFrame
     top_bank: pd.DataFrame
 
-    # ---- NEW: Top-10 per slice (unique formulas) ----
     top10_nodes: List[GPNode]
     top10_table: pd.DataFrame
 
@@ -4159,6 +4160,8 @@ def ga_evolve_on_slice(
         top10_table=top10_table
     )
 
+ 
+
 
 # ============================================================
 # 9) Prepare terminals: build slice terminal bank
@@ -4336,6 +4339,73 @@ def run_walkforward_ga_layer(
 
     rebs = sorted([pd.Timestamp(k) for k in screen_reports.keys()])
 
+    # ✅ FIX: build selected_by_slice map (Route A output) for terminal fallback
+    _sel_raw = wf.get("selected_by_slice", {}) or {}
+    selected_by_date = {}
+    if isinstance(_sel_raw, dict):
+        for k, v in _sel_raw.items():
+            try:
+                selected_by_date[pd.Timestamp(k)] = v
+            except Exception:
+                # keep best effort: if key is weird, ignore
+                pass
+
+    all_feature_names = list(features_np.keys())
+
+    def _unique_preserve(seq):
+        out = []
+        seen = set()
+        for x in seq:
+            if x is None:
+                continue
+            s = str(x)
+            if s in seen:
+                continue
+            seen.add(s)
+            out.append(s)
+        return out
+
+    def _sanitize_terminals(seq):
+        # keep only factors that exist in features_np
+        out = []
+        seen = set()
+        for x in seq:
+            s = str(x)
+            if s in seen:
+                continue
+            if s not in features_np:
+                continue
+            seen.add(s)
+            out.append(s)
+        return out
+
+    def _get_selected_pool(t0, scr_obj):
+        # 1) prefer wf["selected_by_slice"][t0]
+        pool = selected_by_date.get(pd.Timestamp(t0), None)
+
+        # 2) fallback: maybe screen report has an attribute
+        if pool is None:
+            for attr in ["selected_by_slice", "selected_factors", "selected", "features_selected"]:
+                if hasattr(scr_obj, attr):
+                    try:
+                        pool = getattr(scr_obj, attr)
+                        break
+                    except Exception:
+                        pass
+
+        # normalize
+        if pool is None:
+            pool = all_feature_names
+        if isinstance(pool, (pd.Index, np.ndarray)):
+            pool = pool.tolist()
+        if not isinstance(pool, (list, tuple)):
+            pool = list(pool) if hasattr(pool, "__iter__") else all_feature_names
+
+        pool = _sanitize_terminals(_unique_preserve(pool))
+        if len(pool) == 0:
+            pool = _sanitize_terminals(all_feature_names)
+        return pool
+
     ga_slice_results: List[GASliceResult] = []
     ga_rows = []
 
@@ -4359,17 +4429,54 @@ def run_walkforward_ga_layer(
         if len(holdout_idx) < 10:
             continue
 
-        lres = lasso_by_date.get(pd.Timestamp(t0), None)
-        if lres is None or (not hasattr(lres, "nonzero_factors")):
-            if verbose:
-                print(f"[GA][skip] {t0.date()} missing lasso slice result")
-            continue
+        # ✅ FIX: terminals selection w/ fallback (NO MORE SKIP)
+        K_MIN = 3
+        K_FILL = 5  # follow your screenshot example (补齐到 5；至少>=3)
 
-        terminals = list(lres.nonzero_factors)
-        if len(terminals) < 3:
-            if verbose:
-                print(f"[GA][skip] {t0.date()} too few terminals after lasso: {len(terminals)}")
-            continue
+        selected_pool = _get_selected_pool(t0, scr)
+
+        lres = lasso_by_date.get(pd.Timestamp(t0), None)
+
+        terminals_source = "lasso_nonzero"
+        terminals_raw = []
+
+        if (lres is None) or (not hasattr(lres, "nonzero_factors")):
+            # missing lasso slice -> fallback to selected_by_slice pool
+            terminals_source = "fallback_selected_by_slice"
+            terminals_raw = selected_pool[:K_FILL]
+        else:
+            terminals_raw = list(getattr(lres, "nonzero_factors", []))
+
+        terminals = _sanitize_terminals(_unique_preserve(terminals_raw))
+
+        # if too few terminals after lasso, top-up from selected_pool
+        if len(terminals) < K_MIN:
+            terminals_source = "lasso_nonzero+topup_selected_by_slice" if terminals_source == "lasso_nonzero" else terminals_source
+            for f in selected_pool:
+                if f not in terminals:
+                    terminals.append(f)
+                if len(terminals) >= max(K_MIN, K_FILL):
+                    break
+
+        # absolute last resort: top up from ALL features (guarantee coverage)
+        if len(terminals) < K_MIN:
+            terminals_source = terminals_source + "+lastresort_all_features"
+            for f in all_feature_names:
+                if f not in terminals:
+                    terminals.append(f)
+                if len(terminals) >= max(K_MIN, K_FILL):
+                    break
+
+        # still protect against pathological case (should not happen)
+        if len(terminals) < 1:
+            raise ValueError(f"[GA] {t0.date()} terminals empty even after fallback; features list empty?")
+
+        if verbose:
+            if (lres is None) or (not hasattr(lres, "nonzero_factors")):
+                print(f"[GA][fallback] {t0.date()} missing lasso slice result -> terminals={len(terminals)} source={terminals_source}")
+            else:
+                if len(terminals_raw) < K_MIN:
+                    print(f"[GA][fallback] {t0.date()} too few terminals after lasso: {len(terminals_raw)} -> filled to {len(terminals)} source={terminals_source}")
 
         bank_train_full = build_terminal_bank_for_index(
             features_np=features_np,
@@ -4392,7 +4499,6 @@ def run_walkforward_ga_layer(
         size_train = ln_mcap_mat[pos_map.reindex(train_idx).values.astype(int), :] if ln_mcap_mat is not None else None
         size_hold  = ln_mcap_mat[pos_map.reindex(holdout_idx).values.astype(int), :] if ln_mcap_mat is not None else None
 
-        # ---- NEW: stable reproducible seed (no python hash randomness) ----
         seed = int(GA_SEED_BASE + (int(pd.Timestamp(t0).strftime("%Y%m%d")) % 100000))
 
         res = ga_evolve_on_slice(
@@ -4411,8 +4517,7 @@ def run_walkforward_ga_layer(
             verbose=verbose
         )
 
-        # ---- Holdout scoring (true OOS) for best ----
-        hold_min_t = int(max(20, min(40, len(holdout_idx))))  # NEW: avoid NaN due to too strict train/val threshold
+        hold_min_t = int(max(20, min(40, len(holdout_idx))))
         hold_fit = gp_score_on_index(
             res.best_node,
             slice_idx=holdout_idx,
@@ -4429,7 +4534,6 @@ def run_walkforward_ga_layer(
         )
         res.best_holdout = hold_fit
 
-        # ---- NEW: Holdout scoring for TOP-10 per slice ----
         if (res.top10_nodes is not None) and (len(res.top10_nodes) > 0):
             hrows = []
             for rnk, nd in enumerate(res.top10_nodes, start=1):
@@ -4458,10 +4562,11 @@ def run_walkforward_ga_layer(
                 })
             hdf = pd.DataFrame(hrows).set_index("rank") if len(hrows) > 0 else pd.DataFrame()
             if (res.top10_table is not None) and (len(res.top10_table) > 0) and (len(hdf) > 0):
-                # merge by formula (index rank preserved)
                 tmp = res.top10_table.copy()
-                tmp = tmp.merge(hdf.reset_index(drop=False)[["rank","formula","holdout_t_hac","holdout_ic_mean","holdout_ic_ir","holdout_N"]],
-                                how="left", on=["rank","formula"])
+                tmp = tmp.merge(
+                    hdf.reset_index(drop=False)[["rank","formula","holdout_t_hac","holdout_ic_mean","holdout_ic_ir","holdout_N"]],
+                    how="left", on=["rank","formula"]
+                )
                 tmp = tmp.set_index("rank")
                 res.top10_table = tmp
 
@@ -4485,8 +4590,11 @@ def run_walkforward_ga_layer(
             "holdout_ic_mean": hold_fit.ic_mean,
             "complexity": res.best_train.complexity,
             "val_obj": res.best_val.obj,
-            # ---- NEW: attach top10 formulas for this slice (object column) ----
             "top10_formulas": (res.top10_table["formula"].tolist() if (res.top10_table is not None and len(res.top10_table)>0) else []),
+
+            # ✅ FIX: add transparent provenance (doesn't change any existing names)
+            "terminals_source": terminals_source,
+            "terminals_lasso_k": int(len(terminals_raw)) if terminals_source.startswith("lasso") else np.nan,
         })
 
         if verbose:
@@ -4536,7 +4644,6 @@ def run_walkforward_ga_layer(
 # ============================================================
 
 class GA_LAYER_WF_CONNECTED:
-    # ---- expose tunables as class attrs (same names) ----
     GA_SEED_BASE = GA_SEED_BASE
     GA_VAL_RATIO = GA_VAL_RATIO
     GA_PURGE_GAP_DAYS = GA_PURGE_GAP_DAYS
@@ -4571,12 +4678,10 @@ class GA_LAYER_WF_CONNECTED:
     GA_CS_STANDARDIZE = GA_CS_STANDARDIZE
     GA_IC_METHOD = GA_IC_METHOD
 
-    # ---- expose dataclasses/types ----
     GPNode = GPNode
     GPFitness = GPFitness
     GASliceResult = GASliceResult
 
-    # ---- expose functions as staticmethods (names unchanged) ----
     ga_to_date_index = staticmethod(ga_to_date_index)
     ga_spy_aggs_to_close_series = staticmethod(ga_spy_aggs_to_close_series)
     ga_time_split_with_purge = staticmethod(ga_time_split_with_purge)
@@ -4620,7 +4725,7 @@ ga_engine = GA_LAYER_WF_CONNECTED()
 
 
 # ============================================================
-# 12) Example usage (GA layer) 
+# 12) Example usage (GA layer)
 # ============================================================
 
 spy = []
@@ -4658,6 +4763,8 @@ ga_wf = run_walkforward_ga_layer(
 )
 
 print(ga_wf["slice_stats"].head(10))
+
+
 
 
 
@@ -8094,4 +8201,5 @@ bt_bank["exec_daily"]
 bt_bank["daily"]
 bt_bank["回测结果"]["stage_table"]
 bt_bank["inferred_window"]
+
 
