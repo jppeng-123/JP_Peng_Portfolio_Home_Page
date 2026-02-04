@@ -6082,25 +6082,15 @@ print(row.iloc[:10] if row is not None else "No composite row found.")
 
 
 
-
-
-
-
-
-
-
-
-
-
 ''' BackTesting Framework '''
 
 # ============================================================
-# 0) Inputs 
+# 0) Inputs (keep as-is)
 # ============================================================
 
-target_index = logret.index   
+target_index = logret.index   # e.g., close.index / idx_valid / the index you want to align to
 
-# 3) 调你之前的函数，得到对齐后的 SPY close（index 与 target_index 完全一致）
+# 3) Use your existing function to get aligned SPY close (index matches target_index exactly)
 spy_close_price = ga_spy_aggs_to_close_series(
     spy_aggs=spy,
     target_index=target_index,
@@ -6117,6 +6107,8 @@ spy_close_price = ga_spy_aggs_to_close_series(
 
 # ============================================================
 # 0) PARAMS (EDIT HERE ONLY)
+#   - Tuned for: ~100-stock US small universe + 5D GA factor
+#   - More realistic frictions + more robust against overfit
 # ============================================================
 
 CFG = {
@@ -6124,25 +6116,25 @@ CFG = {
     "engine": {
         "init_cash": 1e8,
         "hold_days": 5,           # locked by implementation
-        "n_pick": 15,           
-        "tau_softmax": 1.15,     
-        "fee_per_share": 0.001,   
-        "impact_bps": 0.0012,     
+        "n_pick": 15,             # more diversified for ~100-stock universe
+        "tau_softmax": 1.15,      # less extreme concentration / more robust
+        "fee_per_share": 0.001,   # modern fee scale (impact should dominate)
+        "impact_bps": 0.0012,     # 12 bps for small universe + daily trading + softmax
     },
 
     # ---------- Sample Space ----------
     "sample_space": {
-        "amo_window": 20,           
-        "amo_threshold": 2e7,       
-        "min_listed_days": 120,      
+        "amo_window": 20,             # smoother liquidity filter
+        "amo_threshold": 2e7,         # ~$20m/day dollar volume
+        "min_listed_days": 120,       # avoid IPO/new listing noise
         "require_price_positive": True,
     },
 
     # ---------- Backtest wrapper ----------
     "wrapper": {
         "strict_tminus1": True,          # keep: no look-ahead
-        "liquidation_buffer_days": 15,   
-        "min_cs_n": 50,                  
+        "liquidation_buffer_days": 15,   # more buffer for maturity + sell fail
+        "min_cs_n": 50,                  # stricter gate for ~100-stock universe
         "start": None,                   # auto infer
         "end": None,                     # auto infer
     },
@@ -6350,9 +6342,9 @@ def build_sample_space_amo_listing(
     sample = (cond_amo & cond_list & cond_px).astype(np.uint8)
 
     # ============================================================
-    # [MOD] 避免轻微 look-ahead:
-    # 不用当天 close.notna() 来决定eligibility；改用 as-of(t-delay) 可见信息。
-    # 当天是否有价/能成交 -> 由撮合(ORD_NO_PRICE)与pending sell体现。
+    # [MOD] Reduce subtle look-ahead:
+    # Do not use same-day close.notna() to decide eligibility; use as-of(t-delay).
+    # Same-day "no price / cannot trade" is handled by ORD_NO_PRICE and pending sells.
     # ============================================================
     if delay is not None and int(delay) > 0:
         known_close = close_df.shift(int(delay))
@@ -6472,7 +6464,8 @@ def _build_w_trade_stage(
         x = comp[t]
 
         # ============================================================
-        # [MOD] 防止“样本不足随机交易”：
+        # [MOD] Prevent "random trading under low sample":
+        # If eligible & finite cross-section count < min_cs_n, skip entry on this day.
         # ============================================================
         n_cs = _count_eligible_finite(x, elig)
         if n_cs < min_cs_n:
@@ -7136,6 +7129,10 @@ def run_backtest_ga_wf_softmax_5d(
         comp_stage_raw = comp_df.reindex(index=stage_dates).astype(float)
 
         # ============================================================
+        # Factor/alpha signals are already delayed upstream (inside signal_bank),
+        # and sample_space already enforces delay in build_sample_space_amo_listing.
+        # No additional shift is applied here.
+        # ============================================================
         sample_stage = sample_stage_raw
         comp_stage = comp_stage_raw
 
@@ -7705,88 +7702,172 @@ def build_backtest_results(bt_bank: dict, trading_days=252) -> dict:
 
 
 # ============================================================
-# 7) Plotting (matplotlib only, legend below)
+# 7) Plotting (matplotlib only, legend below)  -- UPDATED
 # ============================================================
 
 def _set_presentation_style():
+    import matplotlib.ticker as mticker  # noqa: F401
     mpl.rcParams.update({
-        "figure.dpi": 150,
-        "savefig.dpi": 240,
-        "font.size": 11,
-        "axes.titlesize": 15,
-        "axes.labelsize": 11,
+        "figure.dpi": 170,
+        "savefig.dpi": 260,
+        "figure.facecolor": "white",
+        "axes.facecolor": "white",
+
+        "font.size": 11.5,
+        "axes.titlesize": 16,
+        "axes.labelsize": 12,
+        "xtick.labelsize": 10.5,
+        "ytick.labelsize": 10.5,
+
         "axes.spines.top": False,
         "axes.spines.right": False,
+        "axes.axisbelow": True,
         "axes.grid": True,
         "grid.alpha": 0.22,
+
         "legend.frameon": False,
-        "lines.linewidth": 2.4,
+        "legend.fontsize": 10.0,
+
+        "lines.linewidth": 2.6,
+        "lines.markersize": 5.0,
     })
-    colors = plt.get_cmap("tab20").colors
-    mpl.rcParams["axes.prop_cycle"] = mpl.cycler(color=colors)
+
+    # Rich, vivid, presentation-grade color cycle (matplotlib-native)
+    palette = (
+        list(plt.get_cmap("Set2").colors) +
+        list(plt.get_cmap("Dark2").colors) +
+        list(plt.get_cmap("tab10").colors) +
+        list(plt.get_cmap("tab20").colors)
+    )
+    mpl.rcParams["axes.prop_cycle"] = mpl.cycler(color=palette)
 
 def _legend_below(ax, ncol=3):
+    handles, labels = ax.get_legend_handles_labels()
+    if labels is None or len(labels) == 0:
+        return 0.05
+
+    n = len(labels)
+    ncol = max(1, int(ncol))
+    rows = int(math.ceil(n / ncol))
+
+    yoff = -0.16 - 0.07 * max(rows - 1, 0)
     ax.legend(
         loc="upper center",
-        bbox_to_anchor=(0.5, -0.18),
+        bbox_to_anchor=(0.5, yoff),
         ncol=ncol,
         frameon=False,
-        handlelength=2.2
+        handlelength=2.4,
+        columnspacing=1.5,
+        handletextpad=0.6,
+        borderaxespad=0.0,
     )
 
+    bottom = 0.10 + 0.06 * rows
+    bottom = min(max(bottom, 0.10), 0.32)
+    return bottom
+
 def plot_nav(bt_bank: dict, spy_close: pd.Series | None = None, title="NAV vs Benchmark"):
+    import matplotlib.dates as mdates
     _set_presentation_style()
     nav = bt_bank["nav"].astype(float)
 
-    fig = plt.figure(figsize=(11.8, 5.0))
+    fig = plt.figure(figsize=(12.2, 5.2))
     ax = fig.add_subplot(111)
+
     ax.plot(nav.index, nav.values, label="Strategy NAV (Close)")
+    ax.fill_between(nav.index, nav.values, np.nanmin(nav.values), alpha=0.08)
 
     if spy_close is not None:
         spy = _to_datetime_index(spy_close.to_frame("SPY"))["SPY"].reindex(nav.index).ffill()
         spy_nav = spy / spy.iloc[0] * nav.iloc[0]
-        ax.plot(spy_nav.index, spy_nav.values, label="SPY (scaled)")
+        ax.plot(spy_nav.index, spy_nav.values, label="SPY (scaled)", linestyle="--")
 
-    ax.set_title(title)
+    ax.set_title(title, pad=10)
     ax.set_xlabel("Date")
     ax.set_ylabel("NAV")
-    _legend_below(ax, ncol=2)
-    fig.tight_layout()
+
+    loc = mdates.AutoDateLocator(minticks=5, maxticks=9)
+    ax.xaxis.set_major_locator(loc)
+    ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(loc))
+
+    bottom = _legend_below(ax, ncol=2)
+    fig.tight_layout(rect=(0, bottom, 1, 1))
     return fig
 
 def plot_drawdown(bt_results: dict, title="Drawdown"):
+    import matplotlib.dates as mdates
+    import matplotlib.ticker as mticker
     _set_presentation_style()
-    dd = bt_results["series"]["drawdown"]
+    dd = bt_results["series"]["drawdown"].astype(float)
 
-    fig = plt.figure(figsize=(11.8, 3.9))
+    fig = plt.figure(figsize=(12.2, 4.1))
     ax = fig.add_subplot(111)
+
     ax.plot(dd.index, dd.values, label="Drawdown")
-    ax.set_title(title)
+    ax.fill_between(dd.index, dd.values, 0.0, alpha=0.12)
+
+    ax.axhline(0.0, linewidth=1.0, alpha=0.35)
+    ax.set_title(title, pad=10)
     ax.set_xlabel("Date")
     ax.set_ylabel("Drawdown")
-    _legend_below(ax, ncol=1)
-    fig.tight_layout()
+
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+
+    loc = mdates.AutoDateLocator(minticks=5, maxticks=9)
+    ax.xaxis.set_major_locator(loc)
+    ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(loc))
+
+    bottom = _legend_below(ax, ncol=1)
+    fig.tight_layout(rect=(0, bottom, 1, 1))
     return fig
 
 def plot_stage_returns(bt_results: dict, title="Stage Total Returns"):
+    import matplotlib.ticker as mticker
     _set_presentation_style()
     stage_df = bt_results["stage_table"].copy()
     x = np.arange(len(stage_df))
     y = stage_df["total_return"].astype(float).values
 
-    fig = plt.figure(figsize=(11.8, 4.6))
+    fig = plt.figure(figsize=(12.2, 4.9))
     ax = fig.add_subplot(111)
-    ax.bar(x, y)
-    ax.axhline(0.0, linewidth=1.2)
-    ax.set_title(title)
-    ax.set_xlabel("Stage #")
+
+    pos = y.copy()
+    neg = -y.copy()
+    pos[pos < 0] = 0.0
+    neg[neg < 0] = 0.0
+    max_pos = float(np.nanmax(pos)) if np.any(np.isfinite(pos)) else 0.0
+    max_neg = float(np.nanmax(neg)) if np.any(np.isfinite(neg)) else 0.0
+    max_pos = max(max_pos, 1e-12)
+    max_neg = max(max_neg, 1e-12)
+
+    cmap_pos = plt.get_cmap("Blues")
+    cmap_neg = plt.get_cmap("Reds")
+    bar_colors = []
+    for v in y:
+        if not np.isfinite(v):
+            bar_colors.append((0.7, 0.7, 0.7, 0.9))
+        elif v >= 0:
+            bar_colors.append(cmap_pos(0.35 + 0.55 * (v / max_pos)))
+        else:
+            bar_colors.append(cmap_neg(0.35 + 0.55 * ((-v) / max_neg)))
+
+    ax.bar(x, y, color=bar_colors, edgecolor="white", linewidth=0.7, label="Stage Total Return")
+    ax.axhline(0.0, linewidth=1.1, alpha=0.55)
+
+    ax.set_title(title, pad=10)
+    ax.set_xlabel("Stage")
     ax.set_ylabel("Total Return")
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+
     ax.set_xticks(x)
     ax.set_xticklabels([str(pd.Timestamp(d).date()) for d in stage_df["stage_start"]], rotation=45, ha="right")
-    fig.tight_layout()
+
+    bottom = _legend_below(ax, ncol=1)
+    fig.tight_layout(rect=(0, bottom, 1, 1))
     return fig
 
 def plot_stage_return_hist(bt_results: dict, title="Stage Return Distribution"):
+    import matplotlib.ticker as mticker
     _set_presentation_style()
     stage_df = bt_results["stage_table"]
     x = stage_df["total_return"].astype(float).values
@@ -7797,15 +7878,20 @@ def plot_stage_return_hist(bt_results: dict, title="Stage Return Distribution"):
 
     bins = int(max(18, min(60, np.sqrt(n) * 6)))
 
-    fig = plt.figure(figsize=(9.3, 4.4))
+    fig = plt.figure(figsize=(9.8, 4.7))
     ax = fig.add_subplot(111)
-    ax.hist(x, bins=bins, density=True)
-    ax.axvline(0.0, linewidth=1.2, label="0%")
-    ax.set_title(title)
+
+    ax.hist(x, bins=bins, density=True, alpha=0.85, edgecolor="white", linewidth=0.6, label="Stage Returns (density)")
+    ax.axvline(0.0, linewidth=1.2, alpha=0.75, label="0%")
+    ax.axvline(float(np.mean(x)), linewidth=1.2, alpha=0.75, linestyle="--", label="Mean")
+
+    ax.set_title(title, pad=10)
     ax.set_xlabel("Stage Total Return")
     ax.set_ylabel("Density")
-    _legend_below(ax, ncol=1)
-    fig.tight_layout()
+    ax.xaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+
+    bottom = _legend_below(ax, ncol=3)
+    fig.tight_layout(rect=(0, bottom, 1, 1))
     return fig
 
 def plot_stage_variance(bt_results: dict, title="Stage Return Variance (Total Return)"):
@@ -7815,17 +7901,30 @@ def plot_stage_variance(bt_results: dict, title="Stage Return Variance (Total Re
     mu = np.nanmean(y)
     v = (y - mu) ** 2
 
-    fig = plt.figure(figsize=(11.8, 4.2))
+    fig = plt.figure(figsize=(12.2, 4.6))
     ax = fig.add_subplot(111)
-    ax.bar(np.arange(len(v)), v, label="(r - mean)^2")
-    ax.set_title(title)
-    ax.set_xlabel("Stage #")
+
+    cmap = plt.get_cmap("viridis")
+    vv = v.copy()
+    vv[~np.isfinite(vv)] = 0.0
+    vmax = float(np.max(vv)) if len(vv) else 1.0
+    vmax = max(vmax, 1e-12)
+    colors = [cmap(0.25 + 0.70 * (float(val) / vmax)) for val in vv]
+
+    ax.bar(np.arange(len(v)), v, color=colors, edgecolor="white", linewidth=0.7, label="(r - mean)^2")
+    ax.set_title(title, pad=10)
+    ax.set_xlabel("Stage")
     ax.set_ylabel("Squared Deviation")
-    _legend_below(ax, ncol=1)
-    fig.tight_layout()
+
+    ax.set_xticks(np.arange(len(stage_df)))
+    ax.set_xticklabels([str(pd.Timestamp(d).date()) for d in stage_df["stage_start"]], rotation=45, ha="right")
+
+    bottom = _legend_below(ax, ncol=1)
+    fig.tight_layout(rect=(0, bottom, 1, 1))
     return fig
 
 def plot_exec_failures(bt_results: dict, title="Execution Failures (Daily)"):
+    import matplotlib.dates as mdates
     _set_presentation_style()
     exec_df = bt_results.get("execution", {}).get("exec_daily", pd.DataFrame())
     if exec_df is None or exec_df.empty:
@@ -7835,18 +7934,27 @@ def plot_exec_failures(bt_results: dict, title="Execution Failures (Daily)"):
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values("date").set_index("date")
 
-    fig = plt.figure(figsize=(11.8, 4.2))
+    fig = plt.figure(figsize=(12.2, 4.6))
     ax = fig.add_subplot(111)
-    ax.plot(df.index, df["n_order_failed"].values, label="Order Failed (count)")
-    ax.plot(df.index, df["n_sell_fail_events"].values, label="Sell Fail Events (count)")
-    ax.set_title(title)
+
+    ax.plot(df.index, df["n_order_failed"].values, label="Order Failures (count)")
+    ax.plot(df.index, df["n_sell_fail_events"].values, label="Sell Fail Events (count)", linestyle="--")
+    ax.fill_between(df.index, df["n_order_failed"].values, 0.0, alpha=0.08)
+
+    ax.set_title(title, pad=10)
     ax.set_xlabel("Date")
     ax.set_ylabel("Count")
-    _legend_below(ax, ncol=2)
-    fig.tight_layout()
+
+    loc = mdates.AutoDateLocator(minticks=5, maxticks=9)
+    ax.xaxis.set_major_locator(loc)
+    ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(loc))
+
+    bottom = _legend_below(ax, ncol=2)
+    fig.tight_layout(rect=(0, bottom, 1, 1))
     return fig
 
 def plot_factor_exposure(bt_results: dict, top_k=12, title="Portfolio Factor Exposure (Top factors)"):
+    import matplotlib.dates as mdates
     _set_presentation_style()
     fs = bt_results.get("factor_summary", None)
     if fs is None:
@@ -7857,22 +7965,35 @@ def plot_factor_exposure(bt_results: dict, top_k=12, title="Portfolio Factor Exp
     cols = list(mean_abs.head(top_k).index)
     X = port_expo[cols].copy()
 
-    fig = plt.figure(figsize=(11.8, 5.1))
+    fig = plt.figure(figsize=(12.2, 5.4))
     ax = fig.add_subplot(111)
-    im = ax.imshow(X.T.values, aspect="auto", interpolation="nearest", cmap="turbo")
-    ax.set_title(title)
+
+    arr = X.T.values
+    vmax = float(np.nanmax(np.abs(arr))) if np.isfinite(arr).any() else 1.0
+    vmax = max(vmax, 1e-12)
+
+    im = ax.imshow(arr, aspect="auto", interpolation="nearest", cmap="RdBu_r", vmin=-vmax, vmax=vmax)
+    ax.set_title(title, pad=10)
     ax.set_yticks(np.arange(len(cols)))
     ax.set_yticklabels(cols)
 
-    ax.set_xticks([0, len(X)//2, max(len(X)-1, 0)])
-    ax.set_xticklabels([str(X.index[0].date()), str(X.index[len(X)//2].date()), str(X.index[-1].date())])
+    idx = X.index
+    if len(idx) >= 2:
+        ax.set_xticks([0, len(idx)//2, max(len(idx)-1, 0)])
+        ax.set_xticklabels([str(idx[0].date()), str(idx[len(idx)//2].date()), str(idx[-1].date())])
+    else:
+        ax.set_xticks([0])
+        ax.set_xticklabels([str(idx[0].date())])
 
-    cbar = fig.colorbar(im, ax=ax, fraction=0.02, pad=0.02)
+    cbar = fig.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
     cbar.set_label("Exposure")
-    fig.tight_layout()
+
+    fig.tight_layout(rect=(0, 0.02, 1, 1))
     return fig
 
 def plot_factor_contribution(bt_results: dict, top_k=10, title="Factor Contribution (Cumulative Return)"):
+    import matplotlib.dates as mdates
+    import matplotlib.ticker as mticker
     _set_presentation_style()
     fa = bt_results.get("factor_attribution", None)
     if fa is None:
@@ -7883,15 +8004,23 @@ def plot_factor_contribution(bt_results: dict, top_k=10, title="Factor Contribut
     cols = list(mean_abs.head(top_k).index)
     c = contrib[cols].fillna(0.0).cumsum()
 
-    fig = plt.figure(figsize=(11.8, 4.9))
+    fig = plt.figure(figsize=(12.2, 5.1))
     ax = fig.add_subplot(111)
     for col in cols:
         ax.plot(c.index, c[col].values, label=str(col))
-    ax.set_title(title)
+
+    ax.axhline(0.0, linewidth=1.0, alpha=0.35)
+    ax.set_title(title, pad=10)
     ax.set_xlabel("Date")
     ax.set_ylabel("Cumulative Return Contribution")
-    _legend_below(ax, ncol=3)
-    fig.tight_layout()
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+
+    loc = mdates.AutoDateLocator(minticks=5, maxticks=9)
+    ax.xaxis.set_major_locator(loc)
+    ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(loc))
+
+    bottom = _legend_below(ax, ncol=3)
+    fig.tight_layout(rect=(0, bottom, 1, 1))
     return fig
 
 
@@ -7901,7 +8030,7 @@ def plot_factor_contribution(bt_results: dict, top_k=10, title="Factor Contribut
 
 def print_backtest_summary(bt_bank: dict, bt_results: dict | None = None):
     o = bt_bank["overall"]
-    print("=== 回测总览 ===")
+    print("=== Backtest Summary ===")
     print(f"Strict t-1 (no look-ahead): {bt_bank.get('strict_tminus1', True)}")
     print(f"Start NAV          : {o['start_nav']:.2f}")
     print(f"End NAV            : {o['end_nav']:.2f}")
@@ -7912,13 +8041,13 @@ def print_backtest_summary(bt_bank: dict, bt_results: dict | None = None):
     print(f"Max Drawdown       : {o['max_drawdown']:.2%}")
 
     if "index_total_return" in o:
-        print("=== 对比指标 ===")
+        print("=== Benchmark Comparison ===")
         print(f"Index Total Return : {o['index_total_return']:.2%}")
         print(f"Hedged Total Return: {o['hedged_total_return']:.2%}")
         print(f"Avg Daily Excess   : {o['avg_daily_excess']:.4%}")
 
     ls = bt_bank["latest_status"]
-    print("\n=== 最新状态 ===")
+    print("\n=== Latest Status ===")
     print("date:", ls["date"], "| region:", ls["region"], "| active_stage:", ls["active_stage"])
     if ls.get("selected_factors", None) is not None:
         print("selected_factors:", ls["selected_factors"])
@@ -7926,13 +8055,13 @@ def print_backtest_summary(bt_bank: dict, bt_results: dict | None = None):
     if bt_results is not None and bt_results:
         st = bt_results["stage_return_test"]
         dt = bt_results["daily_return_test"]
-        print("\n=== 显著性检验（H1: 均值 > 0）===")
+        print("\n=== Significance Tests (H1: mean > 0) ===")
         print(f"[Stage total return] n={st['n']}  t={st['t_stat']:.3f}  p(one-sided)={st['p_one_sided']:.4g}  mean={st['mean']:.6g}  std={st['std']:.6g}")
         print(f"[Daily return | HAC] n={dt['n']}  lags={dt.get('lags', np.nan)}  t={dt['t_stat']:.3f}  p(one-sided)={dt['p_one_sided']:.4g}  mean={dt['mean']:.6g}  std={dt['std']:.6g}")
 
         ex = bt_results.get("execution", {}).get("exec_daily", pd.DataFrame())
         if ex is not None and (not ex.empty):
-            print("\n=== Execution 概览 ===")
+            print("\n=== Execution Overview ===")
             print("Total order failed:", int(ex["n_order_failed"].sum()))
             print("Total sell fail events:", int(ex["n_sell_fail_events"].sum()))
             print("Total realized pnl (SELL days):", float(ex["realized_pnl_sell"].sum()))
@@ -7941,7 +8070,7 @@ def print_backtest_summary(bt_bank: dict, bt_results: dict | None = None):
         if lots is not None and (not lots.empty):
             d = lots["delay_days"].dropna()
             if len(d):
-                print("\n=== Lot 延迟卖出统计 ===")
+                print("\n=== Lot Delayed-Sell Stats ===")
                 print("Avg delay days:", float(d.mean()))
                 print("Max delay days:", float(d.max()))
                 print("Delayed ratio:", float((lots["exit_reason"]=="DELAY").mean()))
@@ -7992,7 +8121,7 @@ def _build_window_bt_from_stage(bt_bank: dict, stage_key: pd.Timestamp):
 
 def print_stage_window_report(win: dict, spy_close: pd.Series | None = None):
     print("\n==============================")
-    print(f"=== 区间报告 | stage_start={win['stage_start'].date()} ===")
+    print(f"=== Window Report | stage_start={win['stage_start'].date()} ===")
     print(f"Holdout: {win['holdout_start'].date()} .. {win['holdout_end'].date()}")
     print(f"Start NAV: {win['overall']['start_nav']:.2f}")
     print(f"End NAV  : {win['overall']['end_nav']:.2f}")
@@ -8004,41 +8133,60 @@ def print_stage_window_report(win: dict, spy_close: pd.Series | None = None):
         print(f"Index RT : {idx_rt:.2%}")
 
 def plot_nav_window(win: dict, spy_close: pd.Series | None = None, title="Window NAV vs Benchmark"):
+    import matplotlib.dates as mdates
     _set_presentation_style()
     nav = win["nav"].astype(float)
 
-    fig = plt.figure(figsize=(11.8, 5.0))
+    fig = plt.figure(figsize=(12.2, 5.2))
     ax = fig.add_subplot(111)
     ax.plot(nav.index, nav.values, label="Strategy NAV (Close)")
+    ax.fill_between(nav.index, nav.values, np.nanmin(nav.values), alpha=0.08)
 
     if spy_close is not None:
         spy = _to_datetime_index(spy_close.to_frame("SPY"))["SPY"].reindex(nav.index).ffill()
         spy_nav = spy / spy.iloc[0] * nav.iloc[0]
-        ax.plot(spy_nav.index, spy_nav.values, label="SPY (scaled)")
+        ax.plot(spy_nav.index, spy_nav.values, label="SPY (scaled)", linestyle="--")
 
-    ax.set_title(title)
+    ax.set_title(title, pad=10)
     ax.set_xlabel("Date")
     ax.set_ylabel("NAV")
-    _legend_below(ax, ncol=2)
-    fig.tight_layout()
+
+    loc = mdates.AutoDateLocator(minticks=5, maxticks=9)
+    ax.xaxis.set_major_locator(loc)
+    ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(loc))
+
+    bottom = _legend_below(ax, ncol=2)
+    fig.tight_layout(rect=(0, bottom, 1, 1))
     return fig
 
 def plot_drawdown_window(win: dict, title="Window Drawdown"):
+    import matplotlib.dates as mdates
+    import matplotlib.ticker as mticker
     _set_presentation_style()
     nav = win["nav"].astype(float)
     dd = nav / nav.cummax() - 1.0
 
-    fig = plt.figure(figsize=(11.8, 3.9))
+    fig = plt.figure(figsize=(12.2, 4.1))
     ax = fig.add_subplot(111)
     ax.plot(dd.index, dd.values, label="Drawdown")
-    ax.set_title(title)
+    ax.fill_between(dd.index, dd.values, 0.0, alpha=0.12)
+
+    ax.axhline(0.0, linewidth=1.0, alpha=0.35)
+    ax.set_title(title, pad=10)
     ax.set_xlabel("Date")
     ax.set_ylabel("Drawdown")
-    _legend_below(ax, ncol=1)
-    fig.tight_layout()
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+
+    loc = mdates.AutoDateLocator(minticks=5, maxticks=9)
+    ax.xaxis.set_major_locator(loc)
+    ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(loc))
+
+    bottom = _legend_below(ax, ncol=1)
+    fig.tight_layout(rect=(0, bottom, 1, 1))
     return fig
 
 def plot_window_daily_return_hist(win: dict, title="Window Daily Return Distribution"):
+    import matplotlib.ticker as mticker
     _set_presentation_style()
     r = win["nav_report"].pct_change().dropna()
     x = r.values
@@ -8047,23 +8195,33 @@ def plot_window_daily_return_hist(win: dict, title="Window Daily Return Distribu
         raise ValueError("No daily returns in window.")
     bins = int(max(25, min(80, np.sqrt(n) * 8)))
 
-    fig = plt.figure(figsize=(9.3, 4.4))
+    fig = plt.figure(figsize=(9.8, 4.7))
     ax = fig.add_subplot(111)
-    ax.hist(x, bins=bins, density=True)
-    ax.axvline(0.0, linewidth=1.2, label="0%")
-    ax.set_title(title)
+    ax.hist(x, bins=bins, density=True, alpha=0.85, edgecolor="white", linewidth=0.6, label="Daily Returns (density)")
+    ax.axvline(0.0, linewidth=1.2, alpha=0.75, label="0%")
+    ax.axvline(float(np.mean(x)), linewidth=1.2, alpha=0.75, linestyle="--", label="Mean")
+
+    ax.set_title(title, pad=10)
     ax.set_xlabel("Daily Return")
     ax.set_ylabel("Density")
-    _legend_below(ax, ncol=1)
-    fig.tight_layout()
+    ax.xaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+
+    bottom = _legend_below(ax, ncol=3)
+    fig.tight_layout(rect=(0, bottom, 1, 1))
     return fig
 
 
 # ============================================================
-# 11) CLASS WRAPPER (封装成类；原函数/调用完全不动)
+# 11) CLASS WRAPPER (packaged as a class; original functions/calls unchanged)
 # ============================================================
 
 class BacktestFramework:
+    """
+    Industry-grade packaging:
+    - Keep all original functions at module level (compatible with your existing usage)
+    - Also expose them on the class as staticmethods (namespace management)
+    - Keep CFG/constants on class attributes
+    """
     CFG = CFG
 
     # constants
@@ -8124,7 +8282,7 @@ class BacktestFramework:
 
 
 # ============================================================
-# 10) USAGE (copy/paste)
+# 10) USAGE (copy/paste) -- keep your original usage structure
 # ============================================================
 
 sample_space = build_sample_space_amo_listing(
@@ -8165,7 +8323,7 @@ bt_results = build_backtest_results(
     bt_bank,
     trading_days=CFG["reporting"]["trading_days"],
 )
-bt_bank["回测结果"] = bt_results
+bt_bank["backtest_results"] = bt_results
 
 print_backtest_summary(bt_bank, bt_results)
 
@@ -8199,7 +8357,14 @@ bt_bank["blotter"]["sell_fail"]
 bt_bank["blotter"]["lots"]
 bt_bank["exec_daily"]
 bt_bank["daily"]
-bt_bank["回测结果"]["stage_table"]
+bt_bank["backtest_results"]["stage_table"]
 bt_bank["inferred_window"]
+
+
+
+
+
+
+
 
 
