@@ -1,6 +1,5 @@
-## 🚀 JP Peng
-Quantitative Research · Systematic Trading · Risk Analytics
-🧭 Overview
+## 🚀 JP Peng Quantitative Research · Systematic Trading · Risk Analytics
+## 🧭 Overview
 
 This repository hosts the professional portfolio site and serves as a structured archive of work in:
 
@@ -24,13 +23,13 @@ disciplined risk control
 
 —not backtest optimization.
 
-🔗 Live site
+## 🔗 Live site
 https://jppeng-123.github.io/
 
 
 
 
-🧠 Research Philosophy
+## 🧠 Research Philosophy
 
 Markets reward process consistency rather than isolated performance.
 
@@ -55,8 +54,8 @@ Objective: strategies designed for live deployment, not historical fit.
 
 
 
-📚 Research Domains
-📈 Systematic Equity & Factor Research
+## 📚 Research Domains
+## 📈 Systematic Equity & Factor Research
 
 Development and validation of cross-sectional alpha signals.
 
@@ -84,7 +83,7 @@ deployable exposures
 
 minimized overfitting
 
-🌪 Volatility & Risk Modeling
+## 🌪 Volatility & Risk Modeling
 
 Construction of forward-looking risk and uncertainty frameworks.
 
@@ -113,7 +112,7 @@ drawdown stability
 
 
 
-⚖️ Portfolio Construction & Optimization
+## ⚖️ Portfolio Construction & Optimization
 
 Practical portfolio engineering under realistic constraints.
 
@@ -142,8 +141,8 @@ implementation feasibility
 
 
 
-🔬 Recent Development Focus
-🧬 Walk-Forward Genetic Algorithm Alpha Platform
+## 🔬 Recent Development Focus
+## 🧬 Walk-Forward Genetic Algorithm Alpha Platform
 
 Industry-grade automated alpha discovery and validation framework.
 
@@ -180,7 +179,7 @@ production-ready deployment
 
 
 
-🛠 Technical Stack
+## 🛠 Technical Stack
 Programming
 
 Python · NumPy · Pandas · Numba · scikit-learn · statsmodels · matplotlib
@@ -196,7 +195,7 @@ Time-series modeling · cross-sectional econometrics · machine learning · stoc
 
 
 
-📊 Portfolio Scope
+## 📊 Portfolio Scope
 
 This portfolio represents:
 
@@ -215,7 +214,7 @@ Designed to reflect professional quantitative research practices rather than aca
 
 
 
-🤝 Contact
+## 🤝 Contact
 
 Email
 jinjia.peng1122@gmail.com
