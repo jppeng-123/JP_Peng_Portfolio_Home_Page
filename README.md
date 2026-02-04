@@ -1,4 +1,4 @@
-🚀 JP Peng
+## 🚀 JP Peng
 Quantitative Research · Systematic Trading · Risk Analytics
 🧭 Overview
 
