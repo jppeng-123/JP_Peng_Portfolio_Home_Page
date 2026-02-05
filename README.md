@@ -1,5 +1,5 @@
 ## 🚀 JP Peng Quantitative Research · Systematic Trading · Risk Analytics
-## 🧭 Overview
+### 🧭 Overview
 
 This repository hosts the professional portfolio site and serves as a structured archive of work in:
 
@@ -55,7 +55,7 @@ Objective: strategies designed for live deployment, not historical fit.
 
 
 ## 📚 Research Domains
-## 📈 Systematic Equity & Factor Research
+### 📈 Systematic Equity & Factor Research
 
 Development and validation of cross-sectional alpha signals.
 
@@ -142,7 +142,7 @@ implementation feasibility
 
 
 ## 🔬 Recent Development Focus
-## 🧬 Walk-Forward Genetic Algorithm Alpha Platform
+### 🧬 Walk-Forward Genetic Algorithm Alpha Platform
 
 Industry-grade automated alpha discovery and validation framework.
 
