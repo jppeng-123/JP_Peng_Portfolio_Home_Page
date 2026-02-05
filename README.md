@@ -237,7 +237,7 @@ Designed to reflect professional quantitative research practices rather than aca
 
 
 ## Disclaimer
-This repository is for research and educational purposes only.
+This page is for research and educational purposes only.
 Nothing here is financial advice, and performance in backtests does not guarantee future results.
 
 UNAUTHORIZED USAGE OF THE CONTENTS IS PROHIBITED AND MAY RESULT IN LEGAL ACTIONS
