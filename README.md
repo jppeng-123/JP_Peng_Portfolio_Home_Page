@@ -1,4 +1,27 @@
-## 🚀 JP Peng Quantitative Research · Systematic Trading · Risk Analytics
+## 🚀 JP Peng Quantitative Research · Systematic Trading · Risk Analytics · Portfolio Management 
+
+## 🤝 Contact
+
+Email
+jinjia.peng1122@gmail.com
+
+Moble
+(626)-650-8800
+
+Website
+https://jppeng-123.github.io/
+
+GitHub
+https://github.com/jppeng-123
+
+LinkedIn
+https://www.linkedin.com/in/jinjiapeng/
+
+
+<img width="350" height="540" alt="github_profile" src="https://github.com/user-attachments/assets/c3b84f76-03bc-45f0-96a9-a2a86cb642fc" />
+
+
+
 ### 🧭 Overview
 
 This repository hosts the professional portfolio site and serves as a structured archive of work in:
@@ -211,22 +234,6 @@ production readiness
 
 Designed to reflect professional quantitative research practices rather than academic prototypes.
 
-
-
-
-## 🤝 Contact
-
-Email
-jinjia.peng1122@gmail.com
-
-GitHub
-https://github.com/jppeng-123
-
-LinkedIn
-https://www.linkedin.com/in/jinjiapeng/
-
-
-<img width="350" height="540" alt="github_profile" src="https://github.com/user-attachments/assets/c3b84f76-03bc-45f0-96a9-a2a86cb642fc" />
 
 
 
