@@ -1,4 +1,4 @@
-## 🚀 JP Peng Quantitative Research · Trading · Risk Analytics · Portfolio Management 
+## 🚀 JP Peng Quantitative Research · Systematic Trading · Risk Analytics · Portfolio Management · Valuation 
 
 ## WELCOME TO MY GITHUB HOMEPAGE!
 ## 🤝 Contact Information
