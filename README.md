@@ -1,6 +1,7 @@
-## 🚀 JP Peng Quantitative Research · Systematic Trading · Risk Analytics · Portfolio Management 
+### 🚀 JP Peng Quantitative Research · Systematic Trading · Risk Analytics · Portfolio Management 
 
-## 🤝 Contact
+## WELCOME TO MY GITHUB HOMEPAGE!
+## 🤝 Contact Information
 
 Email
 jinjia.peng1122@gmail.com
@@ -20,8 +21,6 @@ https://www.linkedin.com/in/jinjiapeng/
 
 <img width="350" height="540" alt="github_profile" src="https://github.com/user-attachments/assets/c3b84f76-03bc-45f0-96a9-a2a86cb642fc" />
 
-
-### WELCOME TO MY GITHUB HOMEPAGE!
 
 ### 🧭 Overview
 
