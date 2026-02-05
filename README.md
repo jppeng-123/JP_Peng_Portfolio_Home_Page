@@ -226,6 +226,7 @@ LinkedIn
 https://www.linkedin.com/in/jinjiapeng/
 
 
+<img width="1024" height="1536" alt="github_profile" src="https://github.com/user-attachments/assets/c3b84f76-03bc-45f0-96a9-a2a86cb642fc" />
 
 
 
