@@ -12,7 +12,7 @@ Moble
 Website
 https://jppeng-123.github.io/
 
-GitHub
+GitHub Repos
 https://github.com/jppeng-123
 
 LinkedIn
